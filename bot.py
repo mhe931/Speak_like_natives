@@ -1,4 +1,4 @@
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, ConversationHandler
 import sqlite3
 import random
@@ -28,6 +28,38 @@ create_db()
 
 # Function to start the bot
 async def start(update: Update, context: CallbackContext) -> None:
+    user_id = update.message.from_user.id
+    # Get user details
+    user = update.message.from_user
+    user_name = user.full_name
+    user_telegram_id = user.id
+    username = user.username
+    
+    # Fetch user profile photos
+    bot: Bot = context.bot
+    profile_photos = await bot.get_user_profile_photos(user_id)
+    
+    if profile_photos.total_count > 0:
+        photo_file_id = profile_photos.photos[0][-1].file_id  # Get the highest resolution photo
+    else:
+        photo_file_id = None
+    
+    # Message to admin
+    message = (
+        f"New user joined:\n"
+        f"Name: {user_name}\n"
+        f"Telegram ID: {user_telegram_id}\n"
+        f"Username: @{username if username else 'N/A'}"
+    )
+    
+    # Send the message and the profile photo (if available) to the admin
+    await bot.send_message(chat_id=admin_id, text=message)
+    if photo_file_id:
+        await bot.send_photo(chat_id=admin_id, photo=photo_file_id)
+    
+    await update.message.reply_text(
+        "Welcome to the Leitner System Bot! Use /commands to see available commands."
+    )
     await update.message.reply_text('Hello! Use /fill to add a post.')
 
 # Function to start filling a post
